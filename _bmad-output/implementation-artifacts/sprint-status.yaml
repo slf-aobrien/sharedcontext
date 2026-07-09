@@ -49,12 +49,12 @@ story_location: _bmad-output/implementation-artifacts
 
 development_status:
   # Epic 1: Trusted Knowledge Contribution and Governance
-  epic-1: in-progress
+  epic-1: done
   1-1-define-context-document-schema-and-front-matter-requirements: done
   1-2-create-contribution-template-and-guidance: done
   1-3-implement-pr-schema-validation-workflow: done
   1-4-configure-domain-ownership-with-codeowners: done
-  epic-1-retrospective: optional
+  epic-1-retrospective: done
 
   # Epic 2: Conflict-Safe Publication Pipeline
   epic-2: backlog
@@ -68,6 +68,58 @@ development_status:
   epic-3: backlog
   3-1-implement-retrieval-api-keyword-and-domain-query-endpoint: backlog
   3-2-add-conflict-signaling-in-retrieval-responses: backlog
+
+action_items:
+  - epic: 1
+    action: "CI/infrastructure review discipline: before review, check shell/YAML files for portability, no silenced errors, diff-filters, timeouts, secure defaults"
+    owner: "Amelia"
+    status: open
+  - epic: 1
+    action: "Documentation consistency gate: update Out-of-Scope sections and tense claims in the same story that changes scope"
+    owner: "Amelia"
+    status: open
+  - epic: 1
+    action: "Git-first baseline: every story spec uses a real commit SHA as baseline_commit"
+    owner: "Aaron"
+    status: done
+  - epic: 1
+    action: "Replace @OWNER_GITHUB_USERNAME in .github/CODEOWNERS with real GitHub identity"
+    owner: "Aaron"
+    status: done
+  - epic: 1
+    action: "Enable branch protection on main per CONTRIBUTING.md admin steps"
+    owner: "Aaron"
+    status: done
+  - epic: 1
+    action: "Conflict detection test strategy: define approach for testing probabilistic conflict detection before Epic 2 Story 2.2"
+    owner: "Murat"
+    status: open
+
+action_items:
+  - epic: 1
+    action: "CI/infrastructure review discipline: before review, check shell/YAML files for portability, no silenced errors, diff-filters, timeouts, secure defaults"
+    owner: "Amelia"
+    status: open
+  - epic: 1
+    action: "Documentation consistency gate: update Out-of-Scope sections and tense claims in the same story that changes scope"
+    owner: "Amelia"
+    status: open
+  - epic: 1
+    action: "Git-first baseline: every story spec uses a real commit SHA as baseline_commit"
+    owner: "Aaron"
+    status: done
+  - epic: 1
+    action: "Replace @OWNER_GITHUB_USERNAME in .github/CODEOWNERS with real GitHub identity"
+    owner: "Aaron"
+    status: done
+  - epic: 1
+    action: "Enable branch protection on main per CONTRIBUTING.md admin steps"
+    owner: "Aaron"
+    status: done
+  - epic: 1
+    action: "Conflict detection test strategy: define approach for testing probabilistic conflict detection before Epic 2 Story 2.2"
+    owner: "Murat"
+    status: open
   3-3-build-interactive-agent-creation-cli: backlog
   3-4-add-agent-configuration-summary-and-smoke-test-flow: backlog
   3-5-implement-explicit-empty-result-fallback-messaging: backlog
