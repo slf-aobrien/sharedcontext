@@ -1,0 +1,92 @@
+# PR Schema Validation Workflow
+#
+# Validates context-document YAML front matter on every pull request targeting main.
+# Only markdown files under docs/ are checked — planning artifacts, skill docs, and
+# other repo markdown are excluded to avoid false positives.
+#
+# Path decision: Phase 1 contributor guidance (CONTRIBUTING.md) uses docs/ as the
+# content root rather than the domains/ path mentioned in the PRD. This workflow
+# follows the active contributor path. If the content root changes, update the
+# git-diff filter and the find fallback below.
+#
+# Enforcement core: _bmad/scripts/validate_context_metadata.py delegates to the
+# canonical schema at _bmad/schemas/context_document_metadata.schema.json.
+# Do not duplicate field rules here.
+
+name: PR Schema Validation
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  schema-validate:
+    name: Validate context document front matter
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          # Full history needed for reliable git diff against the base branch.
+          fetch-depth: 0
+
+      - name: Detect changed context documents
+        id: detect
+        run: |
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+
+          if [ -n "$BASE_SHA" ] && git cat-file -e "$BASE_SHA" 2>/dev/null; then
+            # Normal case: diff changed .md files under docs/ against the PR base.
+            CHANGED=$(git diff --name-only --diff-filter=ACMR "$BASE_SHA" "$HEAD_SHA" -- 'docs/' \
+              | grep '\.md$' || true)
+          else
+            # No reachable base commit (e.g. initial PR on a repo with no prior commits):
+            # validate every .md file under docs/ so nothing slips through.
+            CHANGED=$(find docs -type f -name '*.md' 2>/dev/null || true)
+          fi
+
+          if [ -z "$CHANGED" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No context documents changed in this PR."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            printf '%s\n' "$CHANGED" > /tmp/changed-context-docs.txt
+            echo "Context documents to validate:"
+            printf '  %s\n' "$CHANGED"
+          fi
+
+      - name: Skip — no context documents changed
+        if: steps.detect.outputs.changed == 'false'
+        run: echo "No docs/*.md files changed. Schema validation skipped — PR can proceed."
+
+      - name: Validate context document metadata
+        if: steps.detect.outputs.changed == 'true'
+        shell: bash
+        run: |
+          set -e
+          mapfile -t FILES < /tmp/changed-context-docs.txt
+          echo "--- Validating ${#FILES[@]} context document(s) ---"
+          python3 _bmad/scripts/validate_context_metadata.py "${FILES[@]}"
+          echo "--- All changed context documents passed schema validation ---"
+
+  codeowners-ready:
+    name: CODEOWNERS placeholder check
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Verify CODEOWNERS placeholder has been replaced
+        run: |
+          if grep -q '@OWNER_GITHUB_USERNAME' .github/CODEOWNERS; then
+            echo "ERROR: .github/CODEOWNERS still contains the @OWNER_GITHUB_USERNAME placeholder."
+            echo "Replace it with a real GitHub username or team slug before enabling branch protection."
+            exit 1
+          fi
+          echo "CODEOWNERS placeholder check passed."

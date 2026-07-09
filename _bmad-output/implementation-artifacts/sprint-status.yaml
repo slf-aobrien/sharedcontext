@@ -1,0 +1,74 @@
+# generated: 2026-07-08
+# last_updated: 2026-07-08
+# project: bmadSharedContext
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# Action Item Status:
+#   - open: Committed during a retrospective, not yet addressed
+#   - in-progress: Actively being worked on
+#   - done: Completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - Developer typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+# - Retrospective appends its action items to action_items; sprint-status surfaces open ones
+
+generated: 2026-07-08
+last_updated: 2026-07-09T00:00:00Z
+project: bmadSharedContext
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+
+development_status:
+  # Epic 1: Trusted Knowledge Contribution and Governance
+  epic-1: in-progress
+  1-1-define-context-document-schema-and-front-matter-requirements: done
+  1-2-create-contribution-template-and-guidance: done
+  1-3-implement-pr-schema-validation-workflow: done
+  1-4-configure-domain-ownership-with-codeowners: done
+  epic-1-retrospective: optional
+
+  # Epic 2: Conflict-Safe Publication Pipeline
+  epic-2: backlog
+  2-1-generate-json-ld-sidecars-on-merge: backlog
+  2-2-implement-blocking-conflict-detection-with-tunable-threshold: backlog
+  2-3-add-domain-owner-conflict-override-with-audit-logging: backlog
+  2-4-build-deterministic-index-graph-upsert-pipeline-with-freshness-sla: backlog
+  epic-2-retrospective: optional
+
+  # Epic 3: Reliable Shared Context Consumption for Agents
+  epic-3: backlog
+  3-1-implement-retrieval-api-keyword-and-domain-query-endpoint: backlog
+  3-2-add-conflict-signaling-in-retrieval-responses: backlog
+  3-3-build-interactive-agent-creation-cli: backlog
+  3-4-add-agent-configuration-summary-and-smoke-test-flow: backlog
+  3-5-implement-explicit-empty-result-fallback-messaging: backlog
+  epic-3-retrospective: optional

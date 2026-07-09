@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad.local/schemas/context_document_metadata.schema.json",
+  "title": "Context Document Metadata",
+  "description": "Canonical front-matter contract for context documents. Timestamps are RFC3339 UTC; validated-on may be null when a document has not been validated yet. The contract is extension-friendly for future metadata attributes while preserving required governance fields.",
+  "type": "object",
+  "required": [
+    "title",
+    "domain",
+    "description",
+    "keywords",
+    "created",
+    "updated",
+    "validated-by",
+    "validated-on",
+    "status"
+  ],
+  "additionalProperties": true,
+  "x-bmad-authoring-conventions": {
+    "keywords_yaml_style": "block-list",
+    "keywords_yaml_example": "keywords:\n  - schema\n  - metadata",
+    "notes": [
+      "Keyword style is an authoring convention for consistency in markdown front matter.",
+      "The schema remains extension-friendly via additionalProperties=true so future attributes can be added without schema churn."
+    ]
+  },
+  "properties": {
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "domain": {
+      "type": "string",
+      "minLength": 1
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "keywords": {
+      "type": "array",
+      "description": "List of discovery tags. Authoring convention: use block-list YAML in markdown front matter for readability and consistency.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "created": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+    },
+    "updated": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+    },
+    "validated-by": {
+      "type": "string",
+      "minLength": 1
+    },
+    "validated-on": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "active",
+        "deprecated"
+      ]
+    }
+  }
+}

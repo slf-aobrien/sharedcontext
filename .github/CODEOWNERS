@@ -1,0 +1,24 @@
+# CODEOWNERS - bmadSharedContext pilot
+#
+# Path decision: docs/user-authentication/ is the active content path (per CONTRIBUTING.md
+# and .github/workflows/pr-validate.yml). The PRD originally referenced /domains/{domain}/
+# but that path was never operationalized. If the content root changes, update entries
+# below AND the git-diff filter in .github/workflows/pr-validate.yml to match.
+# ──────────────────────────────────────────────────────────────────────────────
+# Default catch-all: any PR not covered by a more-specific rule below requires
+# owner review. Remove or narrow this entry if planning-artifact PRs become noisy.
+# ──────────────────────────────────────────────────────────────────────────────
+*                                   @slf-aobrien
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Domain content: User Authentication context documents.
+# Fires when any file under docs/user-authentication/ is added or changed.
+# ──────────────────────────────────────────────────────────────────────────────
+docs/user-authentication/           @slf-aobrien
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Infrastructure guard: workflow and governance files are owned by the same
+# admin to prevent CI bypass or silent removal of ownership rules.
+# ──────────────────────────────────────────────────────────────────────────────
+.github/workflows/                  @slf-aobrien
+.github/CODEOWNERS                  @slf-aobrien
