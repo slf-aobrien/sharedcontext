@@ -1,5 +1,13 @@
 # Deferred Work
 
+## Deferred from: code review of 2-1-generate-json-ld-sidecars-on-merge (2026-07-09)
+
+- Multi-commit push (≥2 commits) triggers `find docs` fallback which processes `docs/user-authentication/index.md` (no front-matter); generator exits 1, CI step fails. Resolves when `index.md` is updated with valid front-matter.
+- `/tmp/changed-docs.txt` not run-scoped; concurrent jobs on self-hosted runners can race and corrupt the file list. Hosted runners get fresh containers so this is low priority; fix with `$RUNNER_TEMP` or a per-run unique name if self-hosted runners are added.
+- `actions/checkout@v4` pinned to a floating tag, not a commit SHA — supply-chain risk. SHA-pin before production hardening.
+- Non-atomic sidecar write: `write_text()` is not atomic; SIGKILL mid-write leaves partial `.jsonld`. Fix with temp file + `os.replace()` when write reliability becomes a requirement.
+- `contentStatus` is not a schema.org vocabulary term; the correct schema.org property is `schema:creativeWorkStatus`. Changing this breaks the AD-7 sidecar contract; requires coordinated update with Story 2.4 index builder and Epic 3 Go retrieval API.
+
 ## Deferred from: code review of 1-4-configure-domain-ownership-with-codeowners (2026-07-09)
 
 - Catch-all `*` will require owner review on all PRs including planning artifacts — by-design per spec with acknowledged operational caveat in CODEOWNERS comment; narrow if review noise becomes a problem.

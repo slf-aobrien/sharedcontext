@@ -1,0 +1,95 @@
+# Post-Merge Index Build Workflow
+#
+# Triggered after each merge to main. Currently produces only JSON-LD sidecars.
+# Stories 2.2–2.4 extend this workflow with conflict detection and index.json population.
+#
+# Concurrency: one run at a time. cancel-in-progress: false because cancelling a partial
+# run could commit sidecars for some docs but not others, corrupting the next diff.
+#
+# [skip ci] in the auto-commit message prevents the commit from re-triggering this workflow.
+
+name: Build Index
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: build-index-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  generate-sidecars:
+    name: Generate JSON-LD sidecars
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          # fetch-depth: 2 — only current + previous commit needed for push-event diff.
+          # (pr-validate.yml uses fetch-depth: 0 for PR base SHA; not needed here.)
+          fetch-depth: 2
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Python dependencies
+        shell: bash
+        run: pip install pyyaml --quiet
+
+      - name: Detect changed context documents
+        id: detect
+        shell: bash
+        run: |
+          set -euo pipefail
+          PREV_SHA="${{ github.event.before }}"
+          CURR_SHA="${{ github.sha }}"
+
+          if [ -n "$PREV_SHA" ] && git cat-file -e "$PREV_SHA" 2>/dev/null; then
+            CHANGED=$(git diff --name-only --diff-filter=ACMR "$PREV_SHA" "$CURR_SHA" -- 'docs/' \
+              | grep '\.md$' || true)
+          else
+            # First push or unreachable base: process all docs so nothing is missed.
+            CHANGED=$(find docs -type f -name '*.md' 2>/dev/null || true)
+          fi
+
+          if [ -z "$CHANGED" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No context documents changed — sidecar generation skipped."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            printf '%s\n' "$CHANGED" > /tmp/changed-docs.txt
+            echo "Context documents to process:"
+            printf '  %s\n' "$CHANGED"
+          fi
+
+      - name: Generate JSON-LD sidecars
+        if: steps.detect.outputs.changed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t FILES < /tmp/changed-docs.txt
+          echo "--- Generating sidecars for ${#FILES[@]} document(s) ---"
+          python3 scripts/generate_jsonld.py "${FILES[@]}"
+          echo "--- Sidecar generation complete ---"
+
+      - name: Commit and push generated sidecars
+        if: steps.detect.outputs.changed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          shopt -s globstar
+          git add docs/**/*.jsonld
+          if git diff --cached --quiet; then
+            echo "No sidecar changes to commit — all up to date."
+          else
+            git pull --rebase origin main
+            git commit -m "ci: regenerate JSON-LD sidecars [skip ci]"
+            git push
+          fi
