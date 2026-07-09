@@ -197,14 +197,16 @@ file is merged.
 **GitHub UI** (Settings → Branches → Add branch protection rule):
 
 1. Branch name pattern: `main`
-2. ✅ Require a pull request before merging — Require approvals: **1**
-3. ✅ Require review from Code Owners
+2. ✅ Require a pull request before merging — Require approvals: **0** (set to 1 when a second contributor joins)
+3. ☐ Require review from Code Owners — enable only when multiple contributors exist
 4. ✅ Require status checks to pass before merging
    - Add status check: `Validate context document front matter`
    - Add status check: `CODEOWNERS placeholder check`
 5. ✅ Require branches to be up to date before merging (recommended)
 6. ✅ Do not allow bypassing the above settings (enforces rules for administrators too)
 7. Save changes.
+
+> **Note for multi-contributor teams:** Set required approvals to 1 and enable "Require review from Code Owners". The CODEOWNERS file will auto-request review from the domain owner on any PR touching `docs/user-authentication/`.
 
 **GitHub CLI alternative** (requires admin token):
 
@@ -220,8 +222,8 @@ gh api repos/{owner}/{repo}/branches/main/protection \
   },
   "enforce_admins": true,
   "required_pull_request_reviews": {
-    "require_code_owner_reviews": true,
-    "required_approving_review_count": 1
+    "require_code_owner_reviews": false,
+    "required_approving_review_count": 0
   },
   "restrictions": null
 }
