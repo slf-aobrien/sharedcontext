@@ -1,0 +1,24 @@
+{
+  "@context": {
+    "@vocab": "https://schema.org/",
+    "dc": "http://purl.org/dc/terms/",
+    "bsc": "https://github.com/slf-aobrien/bmadSharedContext/vocab#"
+  },
+  "@type": "DigitalDocument",
+  "@id": "bsc:docs/user-authentication/concepts",
+  "dc:title": "User Authentication Concepts",
+  "dc:description": "Overview of core concepts and terminology used within the user authentication domain.",
+  "dc:subject": [
+    "authentication",
+    "concepts"
+  ],
+  "dc:created": "2026-07-09T00:00:00Z",
+  "dc:modified": "2026-07-09T00:00:00Z",
+  "dc:contributor": "slf-aobrien",
+  "contentStatus": "draft",
+  "bsc:domain": "user-authentication",
+  "bsc:validated_on": null,
+  "bsc:source_path": "docs/user-authentication/concepts.md",
+  "bsc:source_hash": "sha256:22ce5383d9ec1ecd974931439d6f2c9c6674aab4ada8cd30dfdbf1696e67bd19",
+  "bsc:schema_version": "1.0"
+}
