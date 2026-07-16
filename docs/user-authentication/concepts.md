@@ -18,4 +18,4 @@ This document captures shared terminology for the user-authentication domain.
 
 Testing note: workflow verification update for Epic 2 pipeline validation.
 
-Pipeline verification note: triggering post-merge artifact publication test.
+Pipeline verification note: trigger post-merge artifact publication test.
