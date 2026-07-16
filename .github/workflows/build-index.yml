@@ -152,13 +152,13 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git pull --rebase origin main
           shopt -s globstar
           git add docs/**/*.jsonld
           git add index/index.json index/build-manifest.json
           if git diff --cached --quiet; then
             echo "No artifact changes to commit — all up to date."
           else
-            git pull --rebase origin main
             git commit -m "ci: regenerate sidecars and index snapshot [skip ci]"
             git push
           fi
