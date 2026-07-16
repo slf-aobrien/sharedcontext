@@ -149,11 +149,11 @@ jobs:
         id: artifact_pr
         uses: peter-evans/create-pull-request@v7
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.AUTOMATION_PAT != '' && secrets.AUTOMATION_PAT || secrets.GITHUB_TOKEN }}
           branch: ci/publish-derived-artifacts
           delete-branch: true
           title: "ci: publish sidecars and index snapshot"
-          commit-message: "ci: regenerate sidecars and index snapshot [skip ci]"
+          commit-message: "ci: regenerate sidecars and index snapshot"
           body: |
             Automated publication of derived artifacts from post-merge build-index workflow.
 
@@ -172,6 +172,6 @@ jobs:
         if: always() && steps.artifact_pr.outputs.pull-request-number != ''
         uses: peter-evans/enable-pull-request-automerge@v3
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.AUTOMATION_PAT != '' && secrets.AUTOMATION_PAT || secrets.GITHUB_TOKEN }}
           pull-request-number: ${{ steps.artifact_pr.outputs.pull-request-number }}
           merge-method: squash
