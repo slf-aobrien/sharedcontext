@@ -1,0 +1,9 @@
+{
+  "build_manifest_id": "055ad3cb-27be-467f-9ffa-aff57a01f745",
+  "schema_version": "1.0",
+  "generated_at_utc": "2026-07-16T15:02:07Z",
+  "freshness_deadline_utc": "2026-07-16T15:07:07Z",
+  "source_commit": "8d133f7695d02c51eadbc67ebd2a43d32755a203",
+  "document_count": 1,
+  "keyword_count": 2
+}

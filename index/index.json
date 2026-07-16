@@ -1,0 +1,44 @@
+{
+  "build_manifest_id": "055ad3cb-27be-467f-9ffa-aff57a01f745",
+  "schema_version": "1.0",
+  "generated_at_utc": "2026-07-16T15:02:07Z",
+  "freshness_deadline_utc": "2026-07-16T15:07:07Z",
+  "document_count": 1,
+  "keyword_count": 2,
+  "active_document_ids": [],
+  "documents": [
+    {
+      "id": "docs/user-authentication/concepts",
+      "domain": "user-authentication",
+      "slug": "concepts",
+      "source_path": "docs/user-authentication/concepts.md",
+      "source_hash": "sha256:ff9bfab288a69816c7be90569791bad8eb42fb266ea3fd87f5b72d90433e328c",
+      "title": "User Authentication Concepts",
+      "description": "Overview of core concepts and terminology used within the user authentication domain.",
+      "keywords": [
+        "authentication",
+        "concepts"
+      ],
+      "status": "draft",
+      "active": false,
+      "created": "2026-07-09 00:00:00+00:00",
+      "updated": "2026-07-09 00:00:00+00:00",
+      "validated_by": "slf-aobrien"
+    }
+  ],
+  "relationships": {
+    "domain_documents": {
+      "user-authentication": [
+        "docs/user-authentication/concepts"
+      ]
+    },
+    "keyword_documents": {
+      "authentication": [
+        "docs/user-authentication/concepts"
+      ],
+      "concepts": [
+        "docs/user-authentication/concepts"
+      ]
+    }
+  }
+}
