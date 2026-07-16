@@ -13,3 +13,7 @@ status: draft
 ---
 
 # User Authentication Concepts
+
+This document captures shared terminology for the user-authentication domain.
+
+Testing note: workflow verification update for Epic 2 pipeline validation.
