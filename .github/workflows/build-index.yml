@@ -1,12 +1,19 @@
 # Post-Merge Index Build Workflow
 #
-# Triggered after each merge to main. Currently produces only JSON-LD sidecars.
-# Stories 2.2–2.4 extend this workflow with conflict detection and index.json population.
+# Triggered after each merge to main. Produces JSON-LD sidecars (generate_jsonld.py)
+# and a deterministic full-snapshot index (build_index.py) in one publication run.
+# Story 2.4 added index.json + build-manifest.json publication to this workflow.
 #
-# Concurrency: one run at a time. cancel-in-progress: false because cancelling a partial
-# run could commit sidecars for some docs but not others, corrupting the next diff.
+# Ordering guarantee: sidecars are generated first; the index builder then reads
+# the sidecars as provenance input.  Both outputs are committed in a single atomic
+# commit so derived artifacts always share one build_manifest_id.
 #
-# [skip ci] in the auto-commit message prevents the commit from re-triggering this workflow.
+# Concurrency: one run at a time. cancel-in-progress: false because cancelling a
+# partial run could commit sidecars without the index (or vice versa), producing a
+# corrupt snapshot.
+#
+# [skip ci] in the auto-commit message prevents the commit from re-triggering this
+# workflow.
 
 name: Build Index
 
@@ -24,7 +31,7 @@ permissions:
 
 jobs:
   generate-sidecars:
-    name: Generate JSON-LD sidecars
+    name: Generate JSON-LD sidecars and index
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -50,11 +57,20 @@ jobs:
           CURR_SHA="${{ github.sha }}"
 
           if [ -n "$PREV_SHA" ] && git cat-file -e "$PREV_SHA" 2>/dev/null; then
+            # ACMR only (excludes deletes): sidecar generation needs files that
+            # still exist on disk to read and hash.
             CHANGED=$(git diff --name-only --diff-filter=ACMR "$PREV_SHA" "$CURR_SHA" -- 'docs/' \
+              | grep '\.md$' || true)
+            # ACMRD (includes deletes): the index builder re-scans the full docs/
+            # corpus on every run, so a delete-only merge must still trigger a
+            # rebuild to drop the removed document from index.json — otherwise
+            # the published index would keep a stale/orphaned entry.
+            DOCS_TOUCHED=$(git diff --name-only --diff-filter=ACMRD "$PREV_SHA" "$CURR_SHA" -- 'docs/' \
               | grep '\.md$' || true)
           else
             # First push or unreachable base: process all docs so nothing is missed.
             CHANGED=$(find docs -type f -name '*.md' 2>/dev/null || true)
+            DOCS_TOUCHED="$CHANGED"
           fi
 
           if [ -z "$CHANGED" ]; then
@@ -67,6 +83,15 @@ jobs:
             printf '  %s\n' "$CHANGED"
           fi
 
+          if [ -z "$DOCS_TOUCHED" ]; then
+            echo "docs_touched=false" >> "$GITHUB_OUTPUT"
+            echo "No context documents added, modified, or deleted — index rebuild skipped."
+          else
+            echo "docs_touched=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Step 1 of 2: generate sidecars first so build_index.py can consume them
+      # as provenance input in the following step.
       - name: Generate JSON-LD sidecars
         if: steps.detect.outputs.changed == 'true'
         shell: bash
@@ -77,8 +102,51 @@ jobs:
           python3 scripts/generate_jsonld.py "${FILES[@]}"
           echo "--- Sidecar generation complete ---"
 
-      - name: Commit and push generated sidecars
-        if: steps.detect.outputs.changed == 'true'
+      # Step 2 of 2: build deterministic full-snapshot index from all docs/**/*.md
+      # (not just changed files) so the index always reflects the complete corpus.
+      # Gated on docs_touched (not changed) so delete-only merges still rebuild.
+      - name: Build deterministic index
+        if: steps.detect.outputs.docs_touched == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "--- Building index snapshot ---"
+          python3 scripts/build_index.py \
+            --docs-dir docs \
+            --output-dir index \
+            --source-commit "${{ github.sha }}"
+          echo "--- Index build complete ---"
+
+      # Write build summary to the GitHub Actions step summary page. This is a
+      # best-effort diagnostic step only — the commit step below runs with
+      # if: always() so a failure here can never block publication of the
+      # already-written index artifacts.
+      - name: Publish build summary
+        if: steps.detect.outputs.docs_touched == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f index/build-manifest.json ]; then
+            IFS=$'\t' read -r BUILD_ID GENERATED DEADLINE DOC_COUNT KW_COUNT < <(python3 -c "import json; d = json.load(open('index/build-manifest.json', encoding='utf-8')); print('\t'.join(str(d[k]) for k in ['build_manifest_id', 'generated_at_utc', 'freshness_deadline_utc', 'document_count', 'keyword_count']))")
+            {
+              echo "## Index Build Summary"
+              echo "| Field | Value |"
+              echo "| --- | --- |"
+              echo "| Build manifest ID | \`${BUILD_ID}\` |"
+              echo "| Published at (UTC) | ${GENERATED} |"
+              echo "| Freshness deadline | ${DEADLINE} |"
+              echo "| Documents indexed | ${DOC_COUNT} |"
+              echo "| Keywords indexed | ${KW_COUNT} |"
+              echo "| Source commit | \`${{ github.sha }}\` |"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      # Commit sidecars + index artifacts in one atomic commit so all derived
+      # artifacts share the same build_manifest_id for this run.
+      # if: always() isolates this from a prior step failure (e.g. the summary
+      # step above) so already-written, valid artifacts are never left uncommitted.
+      - name: Commit and push sidecars and index artifacts
+        if: always() && steps.detect.outputs.docs_touched == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -86,10 +154,11 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           shopt -s globstar
           git add docs/**/*.jsonld
+          git add index/index.json index/build-manifest.json
           if git diff --cached --quiet; then
-            echo "No sidecar changes to commit — all up to date."
+            echo "No artifact changes to commit — all up to date."
           else
             git pull --rebase origin main
-            git commit -m "ci: regenerate JSON-LD sidecars [skip ci]"
+            git commit -m "ci: regenerate sidecars and index snapshot [skip ci]"
             git push
           fi

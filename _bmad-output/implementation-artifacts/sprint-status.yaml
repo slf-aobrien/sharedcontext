@@ -41,7 +41,7 @@
 # - Retrospective appends its action items to action_items; sprint-status surfaces open ones
 
 generated: 2026-07-08
-last_updated: 2026-07-09T16:00:00Z
+last_updated: 2026-07-16T00:00:00Z
 project: bmadSharedContext
 project_key: NOKEY
 tracking_system: file-system
@@ -57,70 +57,68 @@ development_status:
   epic-1-retrospective: done
 
   # Epic 2: Conflict-Safe Publication Pipeline
-  epic-2: in-progress
+  epic-2: done
   2-1-generate-json-ld-sidecars-on-merge: done
-  2-2-implement-blocking-conflict-detection-with-tunable-threshold: backlog
-  2-3-add-domain-owner-conflict-override-with-audit-logging: backlog
-  2-4-build-deterministic-index-graph-upsert-pipeline-with-freshness-sla: backlog
-  epic-2-retrospective: optional
+  2-2-implement-blocking-conflict-detection-with-tunable-threshold: done
+  2-3-add-domain-owner-conflict-override-with-audit-logging: done
+  2-4-build-deterministic-index-graph-upsert-pipeline-with-freshness-sla: done
+  epic-2-retrospective: done
 
   # Epic 3: Reliable Shared Context Consumption for Agents
   epic-3: backlog
   3-1-implement-retrieval-api-keyword-and-domain-query-endpoint: backlog
   3-2-add-conflict-signaling-in-retrieval-responses: backlog
-
-action_items:
-  - epic: 1
-    action: "CI/infrastructure review discipline: before review, check shell/YAML files for portability, no silenced errors, diff-filters, timeouts, secure defaults"
-    owner: "Amelia"
-    status: open
-  - epic: 1
-    action: "Documentation consistency gate: update Out-of-Scope sections and tense claims in the same story that changes scope"
-    owner: "Amelia"
-    status: open
-  - epic: 1
-    action: "Git-first baseline: every story spec uses a real commit SHA as baseline_commit"
-    owner: "Aaron"
-    status: done
-  - epic: 1
-    action: "Replace @OWNER_GITHUB_USERNAME in .github/CODEOWNERS with real GitHub identity"
-    owner: "Aaron"
-    status: done
-  - epic: 1
-    action: "Enable branch protection on main per CONTRIBUTING.md admin steps"
-    owner: "Aaron"
-    status: done
-  - epic: 1
-    action: "Conflict detection test strategy: define approach for testing probabilistic conflict detection before Epic 2 Story 2.2"
-    owner: "Murat"
-    status: open
-
-action_items:
-  - epic: 1
-    action: "CI/infrastructure review discipline: before review, check shell/YAML files for portability, no silenced errors, diff-filters, timeouts, secure defaults"
-    owner: "Amelia"
-    status: open
-  - epic: 1
-    action: "Documentation consistency gate: update Out-of-Scope sections and tense claims in the same story that changes scope"
-    owner: "Amelia"
-    status: open
-  - epic: 1
-    action: "Git-first baseline: every story spec uses a real commit SHA as baseline_commit"
-    owner: "Aaron"
-    status: done
-  - epic: 1
-    action: "Replace @OWNER_GITHUB_USERNAME in .github/CODEOWNERS with real GitHub identity"
-    owner: "Aaron"
-    status: done
-  - epic: 1
-    action: "Enable branch protection on main per CONTRIBUTING.md admin steps"
-    owner: "Aaron"
-    status: done
-  - epic: 1
-    action: "Conflict detection test strategy: define approach for testing probabilistic conflict detection before Epic 2 Story 2.2"
-    owner: "Murat"
-    status: open
   3-3-build-interactive-agent-creation-cli: backlog
   3-4-add-agent-configuration-summary-and-smoke-test-flow: backlog
   3-5-implement-explicit-empty-result-fallback-messaging: backlog
   epic-3-retrospective: optional
+
+action_items:
+  - epic: 1
+    action: "CI/infrastructure review discipline: before review, check shell/YAML files for portability, no silenced errors, diff-filters, timeouts, secure defaults"
+    owner: "Amelia"
+    status: in-progress
+  - epic: 1
+    action: "Documentation consistency gate: update Out-of-Scope sections and tense claims in the same story that changes scope"
+    owner: "Amelia"
+    status: done
+  - epic: 1
+    action: "Git-first baseline: every story spec uses a real commit SHA as baseline_commit"
+    owner: "Aaron"
+    status: done
+  - epic: 1
+    action: "Replace @OWNER_GITHUB_USERNAME in .github/CODEOWNERS with real GitHub identity"
+    owner: "Aaron"
+    status: done
+  - epic: 1
+    action: "Enable branch protection on main per CONTRIBUTING.md admin steps"
+    owner: "Aaron"
+    status: done
+  - epic: 1
+    action: "Conflict detection test strategy: define approach for testing probabilistic conflict detection before Epic 2 Story 2.2"
+    owner: "Murat"
+    status: in-progress
+  - epic: 2
+    action: "Prove build-index.yml runs end-to-end on a real merge to main and produces index/index.json + index/build-manifest.json"
+    owner: "Amelia"
+    status: open
+  - epic: 2
+    action: "Resolve full deferred-work.md backlog (~20 open items across Stories 2.1-2.4), prioritizing missing permissions blocks, missing actions/setup-python step, and exit-code masking"
+    owner: "Amelia"
+    status: open
+  - epic: 2
+    action: "Resolve contentStatus schema.org mismatch (rename to schema:creativeWorkStatus) across sidecar + index schema before Epic 3 Go API consumes it"
+    owner: "Winston"
+    status: open
+  - epic: 2
+    action: "Add a GitHub-workflow activation checklist: require real end-to-end trigger verification before marking a workflow-delivering story done"
+    owner: "Amelia"
+    status: open
+  - epic: 2
+    action: "Close recurring deferred items instead of re-deferring: an item flagged pre-existing/deferred twice becomes a required fix in the next story"
+    owner: "Amelia"
+    status: open
+  - epic: 2
+    action: "Retro-fit a conflict-detection test-strategy note documenting the Jaccard similarity / sentence-scoped negation / boundary-test approach actually used"
+    owner: "Murat"
+    status: open
