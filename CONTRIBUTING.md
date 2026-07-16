@@ -155,6 +155,35 @@ that review is approved.
 
 ---
 
+## Overriding a False-Positive Conflict (Domain Owners Only)
+
+If the automated conflict check blocks your PR but you believe the flagged contradiction is
+a false positive, a **domain owner for at least one affected domain** can override the block
+by adding the following two lines, verbatim, to the PR description:
+
+```text
+conflict-override: justified
+override-reason: <plain-language rationale for why this is not a real conflict>
+```
+
+Requirements:
+
+- Both lines are required. A missing or empty `override-reason` is treated as invalid and the
+  PR remains blocked.
+- The value after `conflict-override:` must be exactly `justified`. Any other value is treated
+  as a malformed override and the PR remains blocked.
+- Only a user listed as an owner (in `.github/CODEOWNERS`) of at least one domain affected by
+  the conflicting documents can successfully use the override — an unauthorized user's override
+  attempt is rejected and reported.
+- Every accepted override is recorded as an audit entry under `docs/_audit/conflict-overrides/`
+  and committed back to your PR branch by the workflow, capturing the PR number, actor, UTC
+  timestamp, affected domains/files, conflict summary, and your stated reason. This log is
+  append-only and not editable after the fact.
+- An override does not bypass schema validation or unrelated document errors — those must
+  still be fixed independently of the conflict override.
+
+---
+
 ## Field Reference
 
 All required fields are described in `templates/context-document-template.md`.  For the

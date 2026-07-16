@@ -25,6 +25,8 @@ jobs:
     name: Validate context document front matter
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: write
 
     steps:
       - name: Check out repository
@@ -32,10 +34,15 @@ jobs:
         with:
           # Full history needed for reliable git diff against the base branch.
           fetch-depth: 0
+          # Check out the actual PR head commit (not the synthetic merge ref) so the
+          # audit-commit step below can push back onto the PR's head branch.
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Detect changed context documents
         id: detect
+        shell: bash
         run: |
+          set -euo pipefail
           BASE_SHA="${{ github.event.pull_request.base.sha }}"
           HEAD_SHA="${{ github.event.pull_request.head.sha }}"
 
@@ -67,11 +74,81 @@ jobs:
         if: steps.detect.outputs.changed == 'true'
         shell: bash
         run: |
-          set -e
+          set -euo pipefail
           mapfile -t FILES < /tmp/changed-context-docs.txt
           echo "--- Validating ${#FILES[@]} context document(s) ---"
           python3 _bmad/scripts/validate_context_metadata.py "${FILES[@]}"
           echo "--- All changed context documents passed schema validation ---"
+
+      - name: Detect unresolved conflicts in changed context documents
+        if: steps.detect.outputs.changed == 'true'
+        shell: bash
+        env:
+          CONFLICT_THRESHOLD: ${{ vars.CONFLICT_THRESHOLD }}
+          RUNNER_TEMP_DIR: ${{ runner.temp }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_ACTOR: ${{ github.actor }}
+          PR_REPOSITORY: ${{ github.repository }}
+          PR_RUN_ID: ${{ github.run_id }}
+          PR_RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+
+          mapfile -t FILES < /tmp/changed-context-docs.txt
+
+          THRESHOLD="${CONFLICT_THRESHOLD}"
+          if [ -z "${THRESHOLD}" ]; then
+            THRESHOLD="0.50"
+          fi
+
+          if [ -z "${RUNNER_TEMP_DIR}" ]; then
+            RUNNER_TEMP_DIR="${TMPDIR:-/tmp}"
+          fi
+          REPORT_PATH="${RUNNER_TEMP_DIR}/conflict-report.json"
+          PR_BODY_PATH="${RUNNER_TEMP_DIR}/pr-body.txt"
+          printf '%s\n' "${PR_BODY:-}" > "${PR_BODY_PATH}"
+
+          echo "--- Running conflict detection for ${#FILES[@]} context document(s) ---"
+          echo "Using conflict threshold: ${THRESHOLD}"
+
+          CONFLICT_EXIT=0
+          python3 scripts/detect_conflicts.py \
+            "${FILES[@]}" \
+            --docs-root docs \
+            --threshold "${THRESHOLD}" \
+            --output "${REPORT_PATH}" \
+            --pr-body-file "${PR_BODY_PATH}" \
+            --actor "${PR_ACTOR}" \
+            --codeowners .github/CODEOWNERS \
+            --pr-number "${PR_NUMBER}" \
+            --repository "${PR_REPOSITORY}" \
+            --run-id "${PR_RUN_ID}" \
+            --run-attempt "${PR_RUN_ATTEMPT}" \
+            --audit-root docs/_audit/conflict-overrides || CONFLICT_EXIT=$?
+
+          echo "--- Conflict detection report ---"
+          cat "${REPORT_PATH}"
+
+          exit ${CONFLICT_EXIT}
+
+      - name: Commit override audit record
+        if: steps.detect.outputs.changed == 'true'
+        shell: bash
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+          if [ -n "$(git status --porcelain -- docs/_audit/conflict-overrides/ 2>/dev/null)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add docs/_audit/conflict-overrides/
+            git commit -m "chore(audit): record conflict-override decision for PR #${PR_NUMBER}"
+            git push origin "HEAD:${PR_HEAD_REF}"
+          else
+            echo "No new override audit record to commit."
+          fi
 
   codeowners-ready:
     name: CODEOWNERS placeholder check
@@ -83,10 +160,33 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Verify CODEOWNERS placeholder has been replaced
+        shell: bash
         run: |
+          set -euo pipefail
           if grep -q '@OWNER_GITHUB_USERNAME' .github/CODEOWNERS; then
             echo "ERROR: .github/CODEOWNERS still contains the @OWNER_GITHUB_USERNAME placeholder."
             echo "Replace it with a real GitHub username or team slug before enabling branch protection."
             exit 1
           fi
           echo "CODEOWNERS placeholder check passed."
+
+  unit-tests:
+    name: Unit test suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Run conflict detection tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover scripts/tests
+
+      - name: Run schema validation tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover _bmad/scripts/tests
