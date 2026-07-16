@@ -28,6 +28,7 @@ concurrency:
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   generate-sidecars:
@@ -141,24 +142,36 @@ jobs:
             } >> "$GITHUB_STEP_SUMMARY"
           fi
 
-      # Commit sidecars + index artifacts in one atomic commit so all derived
-      # artifacts share the same build_manifest_id for this run.
-      # if: always() isolates this from a prior step failure (e.g. the summary
-      # step above) so already-written, valid artifacts are never left uncommitted.
-      - name: Commit and push sidecars and index artifacts
+      # Repositories with rulesets that require PRs cannot accept direct pushes
+      # from this workflow. Create an automated PR instead.
+      - name: Create PR with sidecars and index artifacts
         if: always() && steps.detect.outputs.docs_touched == 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git pull --rebase --autostash origin main
-          shopt -s globstar
-          git add docs/**/*.jsonld
-          git add index/index.json index/build-manifest.json
-          if git diff --cached --quiet; then
-            echo "No artifact changes to commit — all up to date."
-          else
-            git commit -m "ci: regenerate sidecars and index snapshot [skip ci]"
-            git push
-          fi
+        id: artifact_pr
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ci/publish-derived-artifacts
+          delete-branch: true
+          title: "ci: publish sidecars and index snapshot"
+          commit-message: "ci: regenerate sidecars and index snapshot [skip ci]"
+          body: |
+            Automated publication of derived artifacts from post-merge build-index workflow.
+
+            Includes updates to:
+            - docs/**/*.jsonld
+            - index/index.json
+            - index/build-manifest.json
+
+            This PR exists because repository rules require changes through pull requests.
+          add-paths: |
+            docs/**/*.jsonld
+            index/index.json
+            index/build-manifest.json
+
+      - name: Enable auto-merge for artifact PR
+        if: always() && steps.artifact_pr.outputs.pull-request-number != ''
+        uses: peter-evans/enable-pull-request-automerge@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          pull-request-number: ${{ steps.artifact_pr.outputs.pull-request-number }}
+          merge-method: squash
