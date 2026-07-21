@@ -1,0 +1,69 @@
+version: 0.1
+scan_topic: voluntary-dental-enrollment
+domain: enrollment
+scope:
+  baseline_prerequisites:
+    - Required Basic Member Data
+  target_delta: Voluntary Dental Coverage
+
+outputs:
+  full_report:
+    commit_allowed_states:
+      - proposed
+      - pending-review
+      - approved
+      - conflicted
+      - rejected
+  agent_subset:
+    include_only:
+      approval_status: approved
+      conflict_flag: false
+
+concepts:
+  - concept_id: enrollment.voluntary-dental
+    concept_name: Voluntary Dental Enrollment Requirements
+    required-data:
+      - rule_id: RD-001
+        rule-statement: Average hours worked is required input for dental eligibility evaluation.
+        source-references:
+          - type: code
+            path: src/enrollment/eligibility.ts
+            locator: validateHoursForDental()
+          - type: doc
+            path: docs/enrollment/eligibility.md
+            locator: minimum-hours-policy
+        confidence: medium
+        conflict-flag: false
+        resolution-status: approved
+    eligibility-rules:
+      - rule_id: ER-001
+        rule-statement: Member is ineligible for voluntary dental when average hours worked is below threshold.
+        source-references:
+          - type: code
+            path: src/enrollment/rules/dentalEligibility.ts
+            locator: if avgHours < MIN_HOURS
+        confidence: high
+        conflict-flag: false
+        resolution-status: pending-review
+    coverage-specific-rules:
+      - rule_id: CS-001
+        rule-statement: Date of birth is required when voluntary dental coverage is selected.
+        source-references:
+          - type: code
+            path: src/ui/forms/dentalEnrollmentForm.tsx
+            locator: requireDOBWhenDentalSelected
+          - type: code
+            path: src/api/enrollment/validateDental.ts
+            locator: validateDentalDOB()
+        confidence: high
+        conflict-flag: true
+        conflict-notes: API requires DOB but UI requirement is conditionally bypassed for dependent flow.
+        resolution-status: conflicted
+
+review_summary:
+  strongest_findings:
+    - ER-001
+    - CS-001
+  low_confidence_items: []
+  open_conflicts:
+    - CS-001

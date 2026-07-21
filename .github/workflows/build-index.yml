@@ -118,6 +118,15 @@ jobs:
             --source-commit "${{ github.sha }}"
           echo "--- Index build complete ---"
 
+      - name: Verify index artifacts consistency
+        if: steps.detect.outputs.docs_touched == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/verify_index_artifacts.py \
+            --manifest index/build-manifest.json \
+            --index index/index.json
+
       # Write build summary to the GitHub Actions step summary page. This is a
       # best-effort diagnostic step only — the commit step below runs with
       # if: always() so a failure here can never block publication of the

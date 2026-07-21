@@ -1,0 +1,99 @@
+scan-id: voluntary-dental-client-scan-2026-07-21
+schema:
+  rule-fields:
+    - rule-statement
+    - source-references
+    - confidence
+    - conflict-flag
+    - conflict-ids (optional; present when conflict-flag is true)
+    - resolution-status
+filters:
+  include-resolution-status:
+    - approved
+  exclude-conflict-flag: true
+
+required-data:
+  - rule-statement: Dental Facility ID capture only applies when an elected benefit has requireDentalFacilityID and dental facility IDs are enabled for the current flow.
+    source-references:
+      - client/app/components/MemberManagement/Benefits/BenefitListCard.tsx::dentalFacilityIdsEnabled
+      - client/app/components/MemberManagement/Benefits/BenefitListCardDetail.tsx::render DentalFacilityId
+      - client/app/context/AddMemberContext.tsx::getEnrollmentRequestData (benefitWithDentalFacilityId)
+    confidence: high
+    conflict-flag: false
+    resolution-status: approved
+  - rule-statement: Dental Facility ID input format is constrained to seven lowercase alphanumeric characters when entered in the add/enroll flow.
+    source-references:
+      - client/app/components/MemberManagement/Benefits/DentalFacilityId.tsx::FormTextField pattern /^[a-z0-9]{7}$/
+      - client/i18n/locale/en.json::MemberManagement.DentalFacilityIdForm.DENTAL_FACILITY_ID_ERROR
+    confidence: high
+    conflict-flag: false
+    resolution-status: approved
+  - rule-statement: Established patient checkbox is effectively gated by Dental Facility ID interaction state and is disabled until ID/patient state is touched or present.
+    source-references:
+      - client/app/components/MemberManagement/Benefits/DentalFacilityId.tsx::isEstablishedPatientDisabled
+    confidence: medium
+    conflict-flag: false
+    resolution-status: approved
+  - rule-statement: When Dental Facility ID add flow is disabled, acknowledgement is mandatory via a required checkbox before save.
+    source-references:
+      - client/app/components/MemberManagement/Benefits/DentalFacilityAcknowledgement.tsx::FormCheckbox(required)
+      - client/app/components/MemberManagement/Benefits/BenefitListCardDetail.tsx::render DentalFacilityAcknowledgement
+      - client/i18n/locale/en.json::MemberManagement.DentalFacilityIdForm.ACKNOWLEDGEMENT_CHECKBOX_LABEL
+    confidence: high
+    conflict-flag: false
+    resolution-status: approved
+
+eligibility-rules:
+  - rule-statement: Dependent eligibility for elected coverage is determined by relationship-to-tier mapping and by child age checks (maxAge/studentMaxAge).
+    source-references:
+      - client/app/context/AddMemberContext.tsx::isTierEligible
+      - client/app/context/AddMemberContext.tsx::isDependentEligible
+      - client/app/context/AddMemberContext.tsx::filterOverMaxAgeChildDependents
+    confidence: high
+    conflict-flag: false
+    resolution-status: approved
+  - rule-statement: If elected coverage implies spouse/child/family/dependent coverage and eligible dependents are missing, enrollment cannot continue and a missing dependents modal is shown.
+    source-references:
+      - client/app/components/MemberManagement/Benefits/BenefitListCardDetail.tsx::onClickSave dependent gating checks
+      - client/app/components/MemberManagement/Benefits/BenefitListCardDetail.tsx::missingDependentsModal
+    confidence: high
+    conflict-flag: false
+    resolution-status: approved
+  - rule-statement: Spouse exclusion behavior depends on benefit rate structure and elected tier/coverage configuration.
+    source-references:
+      - client/app/context/AddMemberContext.tsx::canExcludeSpouse
+      - client/app/components/MemberManagement/Benefits/BenefitListCardDetail.tsx::getExcludableDependents
+    confidence: high
+    conflict-flag: false
+    resolution-status: approved
+  - rule-statement: Tobacco/smoker data requirements are conditional on elected benefits and enrolled participant roles (member/spouse).
+    source-references:
+      - client/app/context/AddMemberContext.tsx::isMemberSmokerRequired
+      - client/app/context/AddMemberContext.tsx::isSpouseSmokerRequired
+      - client/app/context/AddMemberContext.tsx::getEnrollmentRequestData smoker mapping
+    confidence: high
+    conflict-flag: false
+    resolution-status: approved
+
+coverage-specific-rules:
+  - rule-statement: During dental-enabled enrollment save, the client performs backend validation and maps DentalFacilityIdentifier errors to member/dependent facility fields.
+    source-references:
+      - client/app/components/MemberManagement/Benefits/BenefitListCardDetail.tsx::validateEnrollment + error mapping
+      - client/app/context/AddMemberContext.tsx::getEntityIndex
+      - client/i18n/locale/en.json::MemberManagement.ValidationErrors.DentalFacilityIdentifier*
+    confidence: high
+    conflict-flag: false
+    resolution-status: approved
+  - rule-statement: Non-covered dependents do not carry Dental Facility ID in payload (empty facilityId when dependent is not enrolled in the dental-requiring benefit).
+    source-references:
+      - client/app/context/AddMemberContext.tsx::getFacilityId dependent branch with isDependentEnrolled
+      - client/app/components/MemberManagement/Benefits/BenefitListCardDetail.test.tsx::dental payload assertions
+    confidence: medium
+    conflict-flag: false
+    resolution-status: approved
+  - rule-statement: Dental Facility ID values are displayed only for covered members when benefit is elected, requireDentalFacilityID is true, and dental facility IDs are enabled.
+    source-references:
+      - client/app/components/MemberManagement/Benefits/BenefitListCardElected.tsx::BenefitValues dental display block
+    confidence: high
+    conflict-flag: false
+    resolution-status: approved
