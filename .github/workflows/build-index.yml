@@ -66,12 +66,16 @@ jobs:
             # corpus on every run, so a delete-only merge must still trigger a
             # rebuild to drop the removed document from index.json — otherwise
             # the published index would keep a stale/orphaned entry.
+            # Rebuild the index for both narrative docs (.md) and structured
+            # agent-produced context artifacts (.yaml/.yml). Only markdown
+            # files feed sidecar generation, but YAML changes can still affect
+            # what the published index should represent for the current merge.
             DOCS_TOUCHED=$(git diff --name-only --diff-filter=ACMRD "$PREV_SHA" "$CURR_SHA" -- 'docs/' \
-              | grep '\.md$' || true)
+              | grep -E '\.(md|yaml|yml)$' || true)
           else
             # First push or unreachable base: process all docs so nothing is missed.
             CHANGED=$(find docs -type f -name '*.md' 2>/dev/null || true)
-            DOCS_TOUCHED="$CHANGED"
+            DOCS_TOUCHED=$(find docs -type f \( -name '*.md' -o -name '*.yaml' -o -name '*.yml' \) 2>/dev/null || true)
           fi
 
           if [ -z "$CHANGED" ]; then
