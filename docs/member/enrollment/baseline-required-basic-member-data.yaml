@@ -1,0 +1,70 @@
+concept-id: required-basic-member-data
+title: Required Basic Member Data
+schema:
+  rule-fields:
+    - rule-statement
+    - source-references
+    - confidence
+    - conflict-flag
+    - conflict-ids (optional; present when conflict-flag is true)
+    - resolution-status
+status: draft
+scope: client enrollment workflows
+source-priority:
+  - implementation
+  - i18n
+required-data:
+  - rule-statement: Member first name and last name are required and must match the name character validation regex.
+    source-references:
+      - client/app/components/AddMember/MemberInfo/PersonalInfo/Name.tsx::FormTextField(firstName,lastName)
+      - client/app/common/enums/regex
+    confidence: high
+    conflict-flag: false
+    resolution-status: approved
+  - rule-statement: Date of birth is required; member DOB validation enforces valid date boundaries (default min age 16, max age 99 in the shared DOB component).
+    source-references:
+      - client/app/components/AddMember/MemberInfo/PersonalInfo/DateOfBirth.tsx::validateDateOfBirth
+      - client/i18n/locale/en.json::MemberManagement.PersonalInfo.INVALID_DOB
+    confidence: medium
+    conflict-flag: false
+    resolution-status: approved
+  - rule-statement: Gender selection is required by default for personal info entry.
+    source-references:
+      - client/app/components/AddMember/MemberInfo/PersonalInfo/Gender.tsx::FormRadioGroup(genderCode)
+    confidence: high
+    conflict-flag: false
+    resolution-status: approved
+  - rule-statement: SSN follows format validation and duplicate detection checks against member/dependent SSNs.
+    source-references:
+      - client/app/components/AddMember/MemberInfo/PersonalInfo/Ssn.tsx::SSN_REGEX and duplicate validator
+      - client/app/context/AddMemberContext.tsx::isDuplicateSSN
+    confidence: high
+    conflict-flag: false
+    resolution-status: approved
+  - rule-statement: At least one policy must be selected, and each selected policy requires an eligible employee group.
+    source-references:
+      - client/app/components/AddMember/Employment/Employment.tsx::policy required validation
+      - client/app/components/AddMember/Employment/Employment.tsx::FormDropdownField(eligibleEmpGrp required)
+      - client/i18n/locale/en.json::MemberManagement.Employment.POLICY_REQUIRED_ERROR
+    confidence: high
+    conflict-flag: false
+    resolution-status: approved
+  - rule-statement: Required enrollment payload includes member information, employment details, dependent records, and policy-benefit elections.
+    source-references:
+      - client/app/context/AddMemberContext.tsx::getEnrollmentRequestData
+      - client/app/context/AddMemberContext.tsx::EnrollmentData
+    confidence: high
+    conflict-flag: false
+    resolution-status: approved
+
+eligibility-rules:
+  - rule-statement: Child dependent age constraints are applied per benefit maxAge/studentMaxAge when determining dependent eligibility.
+    source-references:
+      - client/app/context/AddMemberContext.tsx::isDependentEligible
+      - client/app/context/AddMemberContext.tsx::getMaxAgeChildDependents
+      - client/app/context/AddMemberContext.tsx::filterOverMaxAgeChildDependents
+    confidence: high
+    conflict-flag: false
+    resolution-status: approved
+
+coverage-specific-rules: []
