@@ -1,9 +1,9 @@
 {
-  "build_manifest_id": "429e7e32-4d24-46e5-9836-f361fb15d487",
+  "build_manifest_id": "06ca4eef-d5af-4b22-960e-067782e9bfc6",
   "schema_version": "1.0",
-  "generated_at_utc": "2026-07-21T19:33:39Z",
-  "freshness_deadline_utc": "2026-07-21T19:38:39Z",
-  "source_commit": "e4ae60da2cecc6ec3717cc0fdbf6797077e76ed4",
+  "generated_at_utc": "2026-07-23T13:44:17Z",
+  "freshness_deadline_utc": "2026-07-23T13:49:17Z",
+  "source_commit": "9294fdbe784e3dc7da6570c59b64d506cb71aea8",
   "document_count": 1,
   "keyword_count": 2
 }

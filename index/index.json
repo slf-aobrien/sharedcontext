@@ -1,8 +1,8 @@
 {
-  "build_manifest_id": "429e7e32-4d24-46e5-9836-f361fb15d487",
+  "build_manifest_id": "06ca4eef-d5af-4b22-960e-067782e9bfc6",
   "schema_version": "1.0",
-  "generated_at_utc": "2026-07-21T19:33:39Z",
-  "freshness_deadline_utc": "2026-07-21T19:38:39Z",
+  "generated_at_utc": "2026-07-23T13:44:17Z",
+  "freshness_deadline_utc": "2026-07-23T13:49:17Z",
   "document_count": 1,
   "keyword_count": 2,
   "active_document_ids": [],
