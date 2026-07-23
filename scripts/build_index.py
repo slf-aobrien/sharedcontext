@@ -214,6 +214,119 @@ def build_document_record(md_path: Path, docs_dir: Path) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# YAML document record builder
+# ---------------------------------------------------------------------------
+
+
+def parse_yaml_document(path: Path) -> dict:
+    """Parse a YAML context document (full-file YAML, no Markdown front-matter).
+
+    A file is treated as a context document when it carries at least one of:
+    ``concept-id``, ``scan-id``, or ``title``.  Files without any of these
+    are silently skipped via NoFrontMatter so the index builder treats them
+    the same way it treats non-context Markdown files.
+
+    Uses yaml.safe_load exclusively — yaml.load() without a Loader is an OWASP
+    deserialization injection risk and is never used here.
+
+    Raises NoFrontMatter (silent skip) when the file is not a context document.
+    Raises ValueError when the YAML is malformed.
+    """
+    try:
+        data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except yaml.YAMLError as exc:
+        raise ValueError(f"YAML parse error: {exc}") from exc
+
+    if not isinstance(data, dict):
+        raise NoFrontMatter(f"{path}: top-level YAML is not a mapping — not a context document")
+
+    if not (data.get("concept-id") or data.get("scan-id") or data.get("title")):
+        raise NoFrontMatter(
+            f"{path}: no concept-id, scan-id, or title field — not a context document"
+        )
+
+    return data
+
+
+def build_yaml_document_record(yaml_path: Path, docs_dir: Path) -> dict:
+    """Build a single document index record from a YAML context document.
+
+    YAML context documents use a flat-file schema rather than Markdown
+    front-matter.  Available fields are mapped to the shared record schema;
+    fields that have no YAML equivalent (created, updated, validated_by) are
+    left as empty strings so API consumers receive a consistent record shape.
+
+    Keyword derivation:
+      - Each directory component of the domain path (e.g. 'member', 'enrollment')
+      - Top-level YAML keys whose value is a non-empty list (rule sections such
+        as 'required-data', 'eligibility-rules') — these are the most
+        semantically meaningful keywords for retrieval.
+
+    Domain derivation:
+      The directory path of the YAML file relative to docs_dir, using POSIX
+      separators (e.g. 'benefit/voluntaryDental').  Files at the root of
+      docs_dir get domain 'root'.
+    """
+    data = parse_yaml_document(yaml_path)
+
+    source_hash = _compute_source_hash(yaml_path)
+    source_path = _source_path_str(yaml_path, docs_dir)
+
+    # Domain: directory path relative to docs_dir, POSIX-style.
+    try:
+        rel = yaml_path.relative_to(docs_dir)
+        domain = rel.parent.as_posix() if rel.parent.as_posix() != "." else "root"
+    except ValueError:
+        domain = "root"
+
+    slug = _slug_from_source_path(source_path)
+
+    # Title: explicit field, or title-case the concept/scan id, or the slug.
+    raw_id = str(data.get("concept-id") or data.get("scan-id") or slug)
+    title = str(data.get("title") or raw_id.replace("-", " ").title())
+
+    # Description: scope field > scan-scope.codebase derivation > empty.
+    description = ""
+    if data.get("scope"):
+        description = str(data["scope"])
+    elif isinstance(data.get("scan-scope"), dict):
+        codebase = data["scan-scope"].get("codebase", "")
+        if codebase:
+            description = f"Scan of {codebase} codebase"
+
+    # Keywords: domain path components + non-empty top-level rule section names.
+    domain_keywords: set[str] = set(domain.replace("/", " ").split())
+    rule_section_keywords: set[str] = {
+        k
+        for k, v in data.items()
+        if isinstance(v, list) and len(v) > 0 and k != "schema"
+    }
+    keywords = sorted(domain_keywords | rule_section_keywords)
+    if not keywords:
+        keywords = [slug]
+
+    status = str(data.get("status", "draft")).lower()
+    is_active = status == "active"
+    doc_id = source_path.rsplit(".", 1)[0] if "." in source_path else source_path
+
+    return {
+        "id": doc_id,
+        "domain": domain,
+        "slug": slug,
+        "source_path": source_path,
+        "source_hash": source_hash,
+        "title": title,
+        "description": description,
+        "keywords": keywords,
+        "status": status,
+        "active": is_active,
+        "created": "",
+        "updated": "",
+        "validated_by": "",
+    }
+
+
+# ---------------------------------------------------------------------------
 # Index builder
 # ---------------------------------------------------------------------------
 
@@ -273,6 +386,24 @@ def build_index(
             pass
         except (ValueError, OSError) as exc:
             errors.append(f"ERROR [{md_path}]: {exc}")
+
+    # --- Parse YAML/YML context documents ---
+    # Scanned after Markdown so any sidecar provenance written during the
+    # sidecar-generation step is already on disk when the index builder runs.
+    # YAML files lacking a recognisable identifier (concept-id / scan-id /
+    # title) are silently skipped via the NoFrontMatter path, just like
+    # Markdown files that have no front-matter block.
+    for yaml_path in sorted([*docs_dir.rglob("*.yaml"), *docs_dir.rglob("*.yml")]):
+        if _audit_parts.intersection(yaml_path.parts):
+            continue
+        try:
+            record = build_yaml_document_record(yaml_path, docs_dir)
+            raw_records.append(record)
+        except NoFrontMatter:
+            # Not a context document — skip silently.
+            pass
+        except (ValueError, OSError) as exc:
+            errors.append(f"ERROR [{yaml_path}]: {exc}")
 
     if errors:
         for err in errors:
