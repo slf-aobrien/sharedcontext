@@ -37,7 +37,7 @@ required-data:
     confidence: high
     conflict-flag: false
     resolution-status: approved
-  - rule-statement: Established the patient checkbox is effectively gated by Dental Facility ID interaction state and is disabled until ID/patient state is touched or present.
+  - rule-statement: Established patient checkbox is effectively gated by Dental Facility ID interaction state and is disabled until ID/patient state is touched or present.
     source-references:
       - client/app/components/MemberManagement/Benefits/DentalFacilityId.tsx::isEstablishedPatientDisabled
     confidence: medium
