@@ -14,7 +14,7 @@ source-priority:
   - implementation
   - i18n
 required-data:
-  - rule-statement: Member first name and last name are required and must match the name character validation regex.
+  - rule-statement: Member first name and last name are required fields and must match the name character validation regex.
     source-references:
       - client/app/components/AddMember/MemberInfo/PersonalInfo/Name.tsx::FormTextField(firstName,lastName)
       - client/app/common/enums/regex
