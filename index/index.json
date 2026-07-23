@@ -1,12 +1,76 @@
 {
-  "build_manifest_id": "06ca4eef-d5af-4b22-960e-067782e9bfc6",
+  "build_manifest_id": "4ece1d00-3230-4818-8b23-2a705aa82785",
   "schema_version": "1.0",
-  "generated_at_utc": "2026-07-23T13:44:17Z",
-  "freshness_deadline_utc": "2026-07-23T13:49:17Z",
-  "document_count": 1,
-  "keyword_count": 2,
+  "generated_at_utc": "2026-07-23T14:11:02Z",
+  "freshness_deadline_utc": "2026-07-23T14:16:02Z",
+  "document_count": 4,
+  "keyword_count": 11,
   "active_document_ids": [],
   "documents": [
+    {
+      "id": "docs/benefit/voluntaryDental/voluntary-dental-agent-consumable",
+      "domain": "benefit/voluntaryDental",
+      "slug": "voluntary-dental-agent-consumable",
+      "source_path": "docs/benefit/voluntaryDental/voluntary-dental-agent-consumable.yaml",
+      "source_hash": "sha256:fb3ede432ed220dad612bb18571e1f915ee8ceed67a7198fad7f3450d8738e4e",
+      "title": "Voluntary Dental Client Scan 2026 07 21",
+      "description": "",
+      "keywords": [
+        "benefit",
+        "coverage-specific-rules",
+        "eligibility-rules",
+        "required-data",
+        "voluntaryDental"
+      ],
+      "status": "draft",
+      "active": false,
+      "created": "",
+      "updated": "",
+      "validated_by": ""
+    },
+    {
+      "id": "docs/benefit/voluntaryDental/voluntary-dental-full-extraction",
+      "domain": "benefit/voluntaryDental",
+      "slug": "voluntary-dental-full-extraction",
+      "source_path": "docs/benefit/voluntaryDental/voluntary-dental-full-extraction.yaml",
+      "source_hash": "sha256:2523abbdc1bebbe2d975961627832f0f3cbb4a5376877f7c96c73399c18ea858",
+      "title": "Voluntary Dental Client Scan 2026 07 21",
+      "description": "Scan of client codebase",
+      "keywords": [
+        "benefit",
+        "conflicts",
+        "coverage-specific-rules",
+        "eligibility-rules",
+        "required-data",
+        "voluntaryDental"
+      ],
+      "status": "draft",
+      "active": false,
+      "created": "",
+      "updated": "",
+      "validated_by": ""
+    },
+    {
+      "id": "docs/member/enrollment/baseline-required-basic-member-data",
+      "domain": "member/enrollment",
+      "slug": "baseline-required-basic-member-data",
+      "source_path": "docs/member/enrollment/baseline-required-basic-member-data.yaml",
+      "source_hash": "sha256:7c010522d051de97b9e8843e82729d2fe4efeb9c6a1a7f17221c61565095c77b",
+      "title": "Required Basic Member Data",
+      "description": "client enrollment workflows",
+      "keywords": [
+        "eligibility-rules",
+        "enrollment",
+        "member",
+        "required-data",
+        "source-priority"
+      ],
+      "status": "draft",
+      "active": false,
+      "created": "",
+      "updated": "",
+      "validated_by": ""
+    },
     {
       "id": "docs/user-authentication/concepts",
       "domain": "user-authentication",
@@ -28,6 +92,13 @@
   ],
   "relationships": {
     "domain_documents": {
+      "benefit/voluntaryDental": [
+        "docs/benefit/voluntaryDental/voluntary-dental-agent-consumable",
+        "docs/benefit/voluntaryDental/voluntary-dental-full-extraction"
+      ],
+      "member/enrollment": [
+        "docs/member/enrollment/baseline-required-basic-member-data"
+      ],
       "user-authentication": [
         "docs/user-authentication/concepts"
       ]
@@ -36,8 +107,42 @@
       "authentication": [
         "docs/user-authentication/concepts"
       ],
+      "benefit": [
+        "docs/benefit/voluntaryDental/voluntary-dental-agent-consumable",
+        "docs/benefit/voluntaryDental/voluntary-dental-full-extraction"
+      ],
       "concepts": [
         "docs/user-authentication/concepts"
+      ],
+      "conflicts": [
+        "docs/benefit/voluntaryDental/voluntary-dental-full-extraction"
+      ],
+      "coverage-specific-rules": [
+        "docs/benefit/voluntaryDental/voluntary-dental-agent-consumable",
+        "docs/benefit/voluntaryDental/voluntary-dental-full-extraction"
+      ],
+      "eligibility-rules": [
+        "docs/benefit/voluntaryDental/voluntary-dental-agent-consumable",
+        "docs/benefit/voluntaryDental/voluntary-dental-full-extraction",
+        "docs/member/enrollment/baseline-required-basic-member-data"
+      ],
+      "enrollment": [
+        "docs/member/enrollment/baseline-required-basic-member-data"
+      ],
+      "member": [
+        "docs/member/enrollment/baseline-required-basic-member-data"
+      ],
+      "required-data": [
+        "docs/benefit/voluntaryDental/voluntary-dental-agent-consumable",
+        "docs/benefit/voluntaryDental/voluntary-dental-full-extraction",
+        "docs/member/enrollment/baseline-required-basic-member-data"
+      ],
+      "source-priority": [
+        "docs/member/enrollment/baseline-required-basic-member-data"
+      ],
+      "voluntaryDental": [
+        "docs/benefit/voluntaryDental/voluntary-dental-agent-consumable",
+        "docs/benefit/voluntaryDental/voluntary-dental-full-extraction"
       ]
     }
   }

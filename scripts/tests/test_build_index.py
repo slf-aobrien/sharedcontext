@@ -15,9 +15,11 @@ Test coverage:
 - Manifest consistency validation (mismatch → ValueError)
 """
 import datetime
+import hashlib
 import json
 import sys
 import tempfile
+import textwrap
 import unittest
 from pathlib import Path
 
@@ -31,6 +33,7 @@ from build_index import (  # noqa: E402
     NoFrontMatter,
     build_document_record,
     build_index,
+    build_yaml_document_record,
     write_artifacts,
 )
 
@@ -512,6 +515,195 @@ class TestRegressionExistingJsonldTests(unittest.TestCase):
     def test_sidecar_module_importable(self):
         """Importing generate_jsonld must not raise."""
         import generate_jsonld  # noqa: F401
+
+
+class TestBuildYamlDocumentRecord(unittest.TestCase):
+    """Unit tests for build_yaml_document_record()."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.docs_dir = Path(self._tmp.name)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def _make_yaml(self, rel_path: str, content: str) -> Path:
+        p = self.docs_dir / rel_path
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(content, encoding="utf-8")
+        return p
+
+    def test_concept_id_yaml_basic_fields(self):
+        yaml_path = self._make_yaml("member/enrollment/baseline.yaml", textwrap.dedent("""\
+            concept-id: my-concept
+            title: My Concept
+            status: draft
+            scope: member enrollment workflows
+            required-data:
+              - rule-statement: Some rule.
+                confidence: high
+                conflict-flag: false
+                resolution-status: approved
+        """))
+        record = build_yaml_document_record(yaml_path, self.docs_dir)
+        self.assertEqual(record["slug"], "baseline")
+        self.assertEqual(record["title"], "My Concept")
+        self.assertEqual(record["domain"], "member/enrollment")
+        self.assertEqual(record["description"], "member enrollment workflows")
+        self.assertIn("required-data", record["keywords"])
+        self.assertEqual(record["status"], "draft")
+        self.assertFalse(record["active"])
+
+    def test_scan_id_title_derived_from_id(self):
+        yaml_path = self._make_yaml("benefit/dental/scan.yaml", textwrap.dedent("""\
+            scan-id: voluntary-dental-scan-2026
+            eligibility-rules:
+              - rule-statement: Some rule.
+                confidence: high
+                conflict-flag: false
+                resolution-status: approved
+        """))
+        record = build_yaml_document_record(yaml_path, self.docs_dir)
+        self.assertEqual(record["title"], "Voluntary Dental Scan 2026")
+        self.assertEqual(record["domain"], "benefit/dental")
+        self.assertIn("eligibility-rules", record["keywords"])
+
+    def test_scan_scope_codebase_used_as_description(self):
+        yaml_path = self._make_yaml("benefit/dental/scan.yaml", textwrap.dedent("""\
+            scan-id: dental-scan
+            scan-scope:
+              codebase: client
+              source-priority:
+                - implementation
+        """))
+        record = build_yaml_document_record(yaml_path, self.docs_dir)
+        self.assertEqual(record["description"], "Scan of client codebase")
+
+    def test_active_status_sets_active_true(self):
+        yaml_path = self._make_yaml("domain/active.yaml",
+                                    "concept-id: active-concept\nstatus: active\n")
+        record = build_yaml_document_record(yaml_path, self.docs_dir)
+        self.assertTrue(record["active"])
+
+    def test_missing_status_defaults_to_draft(self):
+        yaml_path = self._make_yaml("domain/nodraft.yaml",
+                                    "concept-id: no-status\n")
+        record = build_yaml_document_record(yaml_path, self.docs_dir)
+        self.assertEqual(record["status"], "draft")
+        self.assertFalse(record["active"])
+
+    def test_record_has_all_required_fields(self):
+        yaml_path = self._make_yaml("domain/doc.yaml", "concept-id: test-concept\n")
+        record = build_yaml_document_record(yaml_path, self.docs_dir)
+        for field in ("id", "domain", "slug", "source_path", "source_hash",
+                      "title", "description", "keywords", "status", "active",
+                      "created", "updated", "validated_by"):
+            self.assertIn(field, record, f"Missing field: {field}")
+
+    def test_source_hash_computed_from_file_bytes(self):
+        content = "concept-id: hash-test\n"
+        yaml_path = self._make_yaml("domain/hash.yaml", content)
+        record = build_yaml_document_record(yaml_path, self.docs_dir)
+        expected = "sha256:" + hashlib.sha256(content.encode("utf-8")).hexdigest()
+        self.assertEqual(record["source_hash"], expected)
+
+    def test_yaml_without_identifier_raises_no_front_matter(self):
+        yaml_path = self._make_yaml("misc/noident.yaml", "setting: value\nother: 123\n")
+        with self.assertRaises(NoFrontMatter):
+            build_yaml_document_record(yaml_path, self.docs_dir)
+
+    def test_malformed_yaml_raises_value_error(self):
+        yaml_path = self._make_yaml("misc/bad.yaml", "concept-id: [\nbad yaml: :")
+        with self.assertRaises(ValueError):
+            build_yaml_document_record(yaml_path, self.docs_dir)
+
+    def test_empty_rule_sections_not_added_as_keywords(self):
+        yaml_path = self._make_yaml("domain/doc.yaml", textwrap.dedent("""\
+            concept-id: doc
+            coverage-specific-rules: []
+        """))
+        record = build_yaml_document_record(yaml_path, self.docs_dir)
+        self.assertNotIn("coverage-specific-rules", record["keywords"])
+
+
+class TestBuildIndexWithYaml(unittest.TestCase):
+    """Integration tests verifying build_index() ingests YAML alongside Markdown."""
+
+    def _run_build(self, docs_dir: Path) -> tuple[dict, dict]:
+        return build_index(
+            docs_dir, "test-commit",
+            _now_utc=_FIXED_NOW,
+            _manifest_id=_FIXED_MANIFEST_ID,
+        )
+
+    def test_yaml_document_included_in_index(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            docs = _make_docs_dir(Path(tmpdir), [
+                ("member/enrollment/baseline.yaml",
+                 "concept-id: baseline\ntitle: Baseline Data\nstatus: draft\n"
+                 "required-data:\n  - rule-statement: A rule.\n    confidence: high\n"
+                 "    conflict-flag: false\n    resolution-status: approved\n"),
+            ])
+            index, _ = self._run_build(docs)
+            self.assertEqual(index["document_count"], 1)
+            self.assertEqual(index["documents"][0]["slug"], "baseline")
+
+    def test_yaml_and_md_documents_both_indexed(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            docs = _make_docs_dir(Path(tmpdir), [
+                ("auth/concepts.md", _fixture_md("Auth Concepts", "auth", ["auth"])),
+                ("member/enrollment/baseline.yaml",
+                 "concept-id: baseline\ntitle: Baseline Data\nstatus: draft\n"),
+            ])
+            index, _ = self._run_build(docs)
+            self.assertEqual(index["document_count"], 2)
+            slugs = {r["slug"] for r in index["documents"]}
+            self.assertIn("concepts", slugs)
+            self.assertIn("baseline", slugs)
+
+    def test_yaml_without_identifier_silently_skipped(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            docs = _make_docs_dir(Path(tmpdir), [
+                ("misc/config.yaml", "setting: value\nother: 123\n"),
+            ])
+            index, _ = self._run_build(docs)
+            self.assertEqual(index["document_count"], 0)
+
+    def test_yaml_in_audit_dir_excluded(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            docs = _make_docs_dir(Path(tmpdir), [
+                ("member/doc.yaml", "concept-id: real-doc\ntitle: Real\n"),
+                ("_audit/override.yaml", "concept-id: audit-override\ntitle: Override\n"),
+            ])
+            index, _ = self._run_build(docs)
+            all_paths = [r["source_path"] for r in index["documents"]]
+            for sp in all_paths:
+                self.assertNotIn("_audit", sp)
+            self.assertEqual(index["document_count"], 1)
+
+    def test_yaml_keywords_appear_in_relationship_map(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            docs = _make_docs_dir(Path(tmpdir), [
+                ("member/enrollment/baseline.yaml",
+                 "concept-id: baseline\nrequired-data:\n  - rule-statement: r.\n"
+                 "    confidence: high\n    conflict-flag: false\n    resolution-status: approved\n"),
+            ])
+            index, _ = self._run_build(docs)
+            kw_map = index["relationships"]["keyword_documents"]
+            self.assertIn("required-data", kw_map)
+
+    def test_document_count_includes_yaml_and_md(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            docs = _make_docs_dir(Path(tmpdir), [
+                ("auth/doc.md", _fixture_md("Auth", "auth", ["auth"])),
+                ("benefit/dental/scan.yaml",
+                 "scan-id: dental-scan\ntitle: Dental Scan\n"),
+                ("member/enrollment/baseline.yaml",
+                 "concept-id: baseline\ntitle: Baseline\n"),
+            ])
+            index, manifest = self._run_build(docs)
+            self.assertEqual(index["document_count"], 3)
+            self.assertEqual(manifest["document_count"], 3)
 
 
 if __name__ == "__main__":

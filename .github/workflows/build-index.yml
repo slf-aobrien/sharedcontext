@@ -13,7 +13,11 @@
 # corrupt snapshot.
 #
 # [skip ci] in the auto-commit message prevents the commit from re-triggering this
-# workflow.
+# workflow. A paths-ignore guard provides an additional safety net: if a push
+# touches ONLY the derived artifact paths (index/ or docs/**/*.jsonld), the
+# workflow does not run. This prevents a stale CI auto-merge from spawning a new
+# run that would immediately overwrite freshly-ingested artifacts with an older
+# snapshot.
 
 name: Build Index
 
@@ -21,6 +25,13 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      # Derived artifacts — changes here are produced BY this workflow and must
+      # not re-trigger it.  Any push that also touches real content files
+      # (docs/**/*.md, docs/**/*.yaml, scripts/**, etc.) will still run because
+      # GitHub only skips the workflow when ALL changed paths match paths-ignore.
+      - 'index/**'
+      - 'docs/**/*.jsonld'
 
 concurrency:
   group: build-index-${{ github.ref }}
