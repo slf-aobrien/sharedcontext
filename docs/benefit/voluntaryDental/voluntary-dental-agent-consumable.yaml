@@ -91,7 +91,7 @@ coverage-specific-rules:
     confidence: medium
     conflict-flag: false
     resolution-status: approved
-  - rule-statement: Dental Facility ID values are displayed only for covered members when benefit is elected, requireDentalFacilityID is true, and dental facility IDs are enabled.
+  - rule-statement: Dental Facility ID values are displayed only for covered members when a benefit is elected, requireDentalFacilityID is true, and dental facility IDs are enabled.
     source-references:
       - client/app/components/MemberManagement/Benefits/BenefitListCardElected.tsx::BenefitValues dental display block
     confidence: high
